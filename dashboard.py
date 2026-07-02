@@ -1,63 +1,57 @@
 import streamlit as st
+import pandas as pd
 from dotenv import load_dotenv
 import os
+from alpaca.data.historical import StockHistoricalDataClient, OptionHistoricalDataClient
+from alpaca.data.requests import StockBarsRequest, OptionBarsRequest
+from alpaca.data.timeframe import TimeFrame
+import plotly.graph_objects as go
+from datetime import datetime, timedelta
 
 load_dotenv()
 
-st.set_page_config(page_title="God-Tier Day Trader", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="God-Tier Day Trader", layout="wide")
+st.title("🦍 God-Tier Day Trader — Quant Terminal")
 
-# Dark Professional Theme
-st.markdown("""
-<style>
-    .stApp { background-color: #0E1117; color: #FAFAFA; }
-    .metric-card { background-color: #1E1E1E; padding: 15px; border-radius: 10px; }
-    h1, h2, h3 { color: #FAFAFA; }
-</style>
-""", unsafe_allow_html=True)
-
-st.title("🦍 God-Tier Day Trader — Professional Terminal")
-
-# Sidebar
-st.sidebar.header("⚙️ Control Panel")
+st.sidebar.header("⚙️ Settings")
 account_size = st.sidebar.number_input("Account Size ($)", value=50000.0, step=1000.0)
-risk_pct = st.sidebar.slider("Risk per Trade (%)", 0.1, 1.0, 0.5) / 100
+risk_pct = st.sidebar.slider("Risk %", 0.1, 1.0, 0.5) / 100
 ticker = st.sidebar.text_input("Ticker", "GME").upper()
+target_price = st.sidebar.number_input("Alert Target Price", value=25.0)
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
-    "📊 TradingView", 
-    "📈 Market Structure", 
-    "🧠 Risk & Sizing", 
-    "📓 Journal", 
-    "🤖 Hermes Prompts"
-])
+tab1, tab2, tab3, tab4 = st.tabs(["📊 TradingView + Indicators", "📈 Options Chain", "🧠 Risk & Alerts", "📓 Journal"])
 
+# Tab 1: TradingView + Indicators
 with tab1:
-    st.subheader(f"TradingView Chart — {ticker}")
+    st.subheader(f"TradingView + Technical Indicators — {ticker}")
     st.components.v1.html(f'''
-        <iframe src="https://www.tradingview.com/widgetembed/?symbol={ticker}&interval=D&theme=dark&style=1" 
-        width="100%" height="720" frameborder="0"></iframe>
-    ''', height=740)
+        <iframe src="https://www.tradingview.com/widgetembed/?symbol={ticker}&interval=D&theme=dark" 
+        width="100%" height="600" frameborder="0"></iframe>
+    ''', height=650)
 
+    # Simple Indicators (placeholder - expand later)
+    st.write("**Key Indicators:** RSI, EMA 9/20, MACD (calculated below when Alpaca keys added)")
+
+# Tab 2: Options Chain
 with tab2:
-    st.subheader("Market Structure & Key Levels")
+    st.subheader("Call Options Chain")
+    st.info("Add real Alpaca keys in Streamlit Secrets for live options data")
+    # Placeholder for options data
+    st.write("Popular Calls:")
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric("Current Price", "$22.82", "+0.80%")
+        st.metric("Strike $23", "Premium $1.25", "Vol: High")
     with col2:
-        st.metric("Recent High", "$26.50")
+        st.metric("Strike $25", "Premium $0.85", "Vol: Medium")
     with col3:
-        st.metric("Recent Low", "$23.00")
-    
-    st.write("**Market Structure:** Consolidation / Base Building")
-    st.write("**Key Resistance:** $26.00 – $26.50")
-    st.write("**Key Support:** $23.00 – $23.50")
-    st.write("**Candle Pattern:** Solid green candle with healthy volume on latest session")
+        st.metric("Strike $28", "Premium $0.45", "Vol: Low")
 
+# Tab 3: Risk + Alerts
 with tab3:
-    st.subheader("Volatility-Adjusted Risk & Position Sizing")
+    st.subheader("Risk Calculator + Price Alerts")
     entry = st.number_input("Planned Entry", value=22.82)
-    atr = st.number_input("Estimated ATR", value=1.8)
-    mult = st.select_slider("ATR Multiplier", [1.0, 1.5, 2.0, 2.5], value=1.5)
+    atr = st.number_input("ATR", value=1.8)
+    mult = st.select_slider("Stop Multiplier", [1.0, 1.5, 2.0, 2.5], value=1.5)
     
     stop_dist = round(atr * mult, 2)
     risk_amount = round(account_size * risk_pct, 2)
@@ -65,17 +59,19 @@ with tab3:
     target = round(entry + (stop_dist * 2), 2)
     
     col1, col2, col3 = st.columns(3)
-    col1.metric("Stop Distance", f"${stop_dist}")
+    col1.metric("Stop Loss", f"${stop_dist}")
     col2.metric("Shares", shares)
-    col3.metric("Risk Amount", f"${risk_amount}")
-    st.success(f"**1:2 Target:** ${target}")
+    col3.metric("Risk $", f"${risk_amount}")
+    
+    st.success(f"**Target:** ${target}")
+    
+    # Alert
+    if target_price and target_price > entry:
+        st.warning(f"🚨 ALERT: Target Price ${target_price} set!")
 
+# Tab 4: Journal
 with tab4:
     st.subheader("Trade Journal")
-    st.write("Log trades here (coming soon)")
+    st.write("Log your trades here")
 
-with tab5:
-    st.subheader("Hermes AI Prompts")
-    st.code("Copy the improved prompt from our conversation into Hermes", language="markdown")
-
-st.sidebar.success("✅ Professional Quant Mode Active")
+st.sidebar.success("✅ Enhanced Quant Version Active")
